@@ -9,7 +9,6 @@ public class ParkingLotRunner {
 		Scanner scan = new Scanner(System.in);
 		Boolean bool = true;
 		while (bool) {
-
 			String info = "";
 			System.out.println("1.Entry\n2.Exit");
 			int choice = scan.nextInt();
@@ -80,6 +79,7 @@ public class ParkingLotRunner {
 					info = "No";
 				}
 				if (info.equals("Yes")) {
+					scan.nextLine();
 					System.out.println("Enter the name");
 					String name = scan.nextLine();
 					System.out.println("Enter the price for wallet");

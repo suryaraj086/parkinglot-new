@@ -5,7 +5,6 @@ public class ParkingLot {
 	TempStore cache = new TempStore();
 
 	public String bookSlot(int floor, VehicleSize type, Token token, boolean payment) throws Exception {
-
 		return cache.bookSlot(floor, type, token, payment);
 	}
 
@@ -48,6 +47,10 @@ public class ParkingLot {
 	}
 
 	public int tokennumber() {
-		return cache.tokennumber();
+		return cache.tokenNumber();
+	}
+
+	public int userNumber() {
+		return cache.userNumber();
 	}
 }

@@ -4,33 +4,104 @@ import java.util.*;
 
 public class TempStore {
 	int token = 1;
+	int userId = 1;
 	Map<Integer, Map<VehicleSize, List<Spots>>> emptySpots = new HashMap<>();
-	List<Spots> occupied = new ArrayList<Spots>();
+	Map<Integer, Map<VehicleSize, List<Spots>>> occupied = new HashMap<Integer, Map<VehicleSize, List<Spots>>>();
 	Map<Integer, Token> tokenMap = new HashMap<Integer, Token>();
 	Map<Integer, UserDetails> userMap = new HashMap<Integer, UserDetails>();
+	Map<Integer, UserDetails> existingCustomer = new HashMap<Integer, UserDetails>();
 
-	public int tokennumber() {
+	public int tokenNumber() {
+		return ++token;
+	}
+
+	public int userNumber() {
 		return ++token;
 	}
 
 	TempStore() {
-		Spots spot = new Spots();
-		spot.setChargingPort(true);
-		spot.setSpotNumber(1);
-		spot.setType(VehicleSize.Electric);
-		List<Spots> list = new ArrayList<Spots>();
-		list.add(spot);
-		Map<VehicleSize, List<Spots>> map = new HashMap<VehicleSize, List<Spots>>();
-		map.put(VehicleSize.Electric, list);
-		emptySpots.put(1, map);
-		for (int i = 2; i < 4; i++) {
-			Spots spot1 = new Spots();
-			spot1.setChargingPort(false);
-			spot1.setFloor(0);
-			spot1.setSpotNumber(i);
+		int floor = 3;
+		int spots = 3;
+		int k = 0;
+		for (int i = 1; i <= floor; i++) {
+
+			Map<VehicleSize, List<Spots>> tempMap = emptySpots.get(i);
+			if (tempMap == null) {
+				tempMap = new HashMap<VehicleSize, List<Spots>>();
+				occupied.put(floor, tempMap);
+			}
+			List<Spots> list = new ArrayList<Spots>();
+			for (int j = 1; j <= spots; j++) {
+				Spots spot = new Spots();
+				spot.setChargingPort(true);
+				spot.setSpotNumber(k++);
+				spot.setType(VehicleSize.Electric);
+				list.add(spot);
+			}
+			tempMap.put(VehicleSize.Electric, list);
+			list = new ArrayList<Spots>();
+			for (int j = 1; j <= spots; j++) {
+				Spots spot = new Spots();
+				spot.setChargingPort(false);
+				spot.setSpotNumber(k++);
+				spot.setType(VehicleSize.Compact);
+				list.add(spot);
+			}
+			tempMap.put(VehicleSize.Compact, list);
+			list = new ArrayList<Spots>();
+			for (int j = 1; j <= spots; j++) {
+				Spots spot = new Spots();
+				spot.setChargingPort(false);
+				spot.setSpotNumber(k++);
+				spot.setType(VehicleSize.Motorcycle);
+				list.add(spot);
+			}
+			tempMap.put(VehicleSize.Motorcycle, list);
+			emptySpots.put(i, tempMap);
 		}
 	}
 
+	public void floorCreator(int floor, int spots) {
+		int k = 0;
+		for (int i = 1; i <= floor; i++) {
+
+			Map<VehicleSize, List<Spots>> tempMap = emptySpots.get(i);
+			if (tempMap == null) {
+				tempMap = new HashMap<VehicleSize, List<Spots>>();
+				occupied.put(floor, tempMap);
+			}
+			List<Spots> list = new ArrayList<Spots>();
+			for (int j = 1; j <= spots; j++) {
+				Spots spot = new Spots();
+				spot.setChargingPort(true);
+				spot.setSpotNumber(k++);
+				spot.setType(VehicleSize.Electric);
+				list.add(spot);
+			}
+			tempMap.put(VehicleSize.Electric, list);
+			list = new ArrayList<Spots>();
+			for (int j = 1; j <= spots; j++) {
+				Spots spot = new Spots();
+				spot.setChargingPort(false);
+				spot.setSpotNumber(k++);
+				spot.setType(VehicleSize.Compact);
+				list.add(spot);
+			}
+			tempMap.put(VehicleSize.Compact, list);
+			list = new ArrayList<Spots>();
+			for (int j = 1; j <= spots; j++) {
+				Spots spot = new Spots();
+				spot.setChargingPort(false);
+				spot.setSpotNumber(k++);
+				spot.setType(VehicleSize.Motorcycle);
+				list.add(spot);
+			}
+			tempMap.put(VehicleSize.Motorcycle, list);
+			emptySpots.put(i, tempMap);
+		}
+	}
+
+//booking
 	public String bookSlot(int floor, VehicleSize type, Token token, boolean payment) throws Exception {
 
 		int vehicleNumber = token.getVehicleNumber();
@@ -38,23 +109,26 @@ public class TempStore {
 			throw new Exception("vehicle already parked");
 		}
 		nullChecker(token);
-		List<Spots> spot = spotChecker(type, floor);
-		for (int i = 0; i < spot.size(); i++) {
-			Spots empty = spot.get(i);
-			nullChecker(empty);
-			empty.setTokenNumber(token.getTokenNumber());
-			tokenMap.put(token.getVehicleNumber(), token);
-			spot.remove(i);
-			occupied.add(empty);
-			return "Booked succesfully and spot number is " + empty.getSpotNumber() + " token number is "
-					+ token.getTokenNumber();
-
-		}
 		if (type == VehicleSize.Electric && payment) {
 			UserDetails user = new UserDetails();
 			userMap.put(token.getTokenNumber(), user);
 		}
-		throw new Exception("spots not found");
+		List<Spots> spot = spotChecker(type, floor);
+		Spots empty = spot.get(0);
+		nullChecker(empty);
+		empty.setTokenNumber(token.getTokenNumber());
+		tokenMap.put(token.getVehicleNumber(), token);
+		spot.remove(0);
+		List<Spots> occupy = occupyChecker(type, floor);
+		if (occupy == null) {
+			occupy = new ArrayList<Spots>();
+		}
+		occupy.add(empty);
+		Map<VehicleSize, List<Spots>> tempMap = occupied.get(floor);
+		tempMap.put(type, occupy);
+		occupied.put(floor, tempMap);
+		return "Booked succesfully and spot number is " + empty.getSpotNumber() + " token number is "
+				+ token.getTokenNumber();
 	}
 
 	public List<Spots> spotChecker(VehicleSize type, int floor) throws Exception {
@@ -69,16 +143,33 @@ public class TempStore {
 		return spot;
 	}
 
+	public List<Spots> occupyChecker(VehicleSize type, int floor) throws Exception {
+		Map<VehicleSize, List<Spots>> tempMap = occupied.get(floor);
+		if (tempMap == null) {
+			tempMap = new HashMap<VehicleSize, List<Spots>>();
+			occupied.put(floor, tempMap);
+		}
+		List<Spots> spot = tempMap.get(type);
+		return spot;
+	}
+
+	// exit
 	public int exitSlot(int tokenNum, int vehicleNum) throws Exception {
 		Token token = tokenMap.get(vehicleNum);
 		nullChecker(token);
-		token.getTokenNumber();
+		if (tokenNum != token.getTokenNumber()) {
+			throw new Exception("failed");
+		}
 		List<Spots> list = spotChecker(token.getVehicleType(), token.getFloor());
-		for (int i = 0; i < occupied.size(); i++) {
-			Spots occupy = occupied.get(i);
-			nullChecker(occupy);
-			if (occupy.getTokenNumber() == tokenNum) {
-				list.add(occupy);
+
+		List<Spots> occupy = occupyChecker(token.getVehicleType(), token.getFloor());
+		if (occupy == null) {
+			throw new Exception("not found");
+		}
+		for (int i = 0; i < occupy.size(); i++) {
+			Spots occupyObj = occupy.get(i);
+			if (occupyObj.getTokenNumber() == tokenNum) {
+				list.add(occupyObj);
 				occupied.remove(i);
 			}
 		}
@@ -100,6 +191,7 @@ public class TempStore {
 		return "Payment Succesful";
 	}
 
+	// amount calculator
 	public int payment(int vehicleNum, int token1) throws Exception {
 		Token token = tokenMap.get(vehicleNum);
 		nullChecker(token);
@@ -133,6 +225,7 @@ public class TempStore {
 		String out = "";
 		for (int i = 0; i < emptySpots.size(); i++) {
 			out += "floor " + (i + 1) + " free spots " + emptySpots.get(i + 1).get(type).size();
+			out += "\n";
 		}
 		return out;
 	}
